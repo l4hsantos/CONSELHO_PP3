@@ -63,6 +63,7 @@ export default function LoginScreen({ navigation }) {
       });
 
       const dados = await resposta.json();
+      console.log('LOGIN:', resposta.status, dados);
 
       if (!resposta.ok) {
         Alert.alert('Não foi possível entrar', dados.erro || 'Tente novamente.');
@@ -76,6 +77,7 @@ export default function LoginScreen({ navigation }) {
       };
       entrar(dadosAuth);
 
+      console.log('PERFIL RECEBIDO:', dados.perfil);
       if (dados.perfil === 'coordenador') {
         navigation.replace('CoordenadorTabs');
       } else {
