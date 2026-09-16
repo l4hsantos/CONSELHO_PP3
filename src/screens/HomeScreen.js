@@ -1,13 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, spacing, typography } from '../theme/colors';
-
-// Tela temporária só para confirmar que o fluxo de Login/Cadastro
-// está funcionando de ponta a ponta. Cada perfil vai ganhar sua
-// própria Home de verdade mais pra frente.
+import { useAuth } from '../context/AuthContext';
 export default function HomeScreen({ route, navigation }) {
+  const { sair } = useAuth();
   const { perfil, usuario } = route.params ?? {};
   const nome = usuario?.nome_completo || usuario?.matricula || '—';
+
+  function handleSair() {
+    sair();
+    navigation.replace('Login');
+  }
 
   return (
     <View style={styles.container}>
@@ -20,10 +23,7 @@ export default function HomeScreen({ route, navigation }) {
           Nome/Matrícula: <Text style={styles.destaque}>{nome}</Text>
         </Text>
 
-        <TouchableOpacity
-          style={styles.botaoSair}
-          onPress={() => navigation.replace('Login')}
-        >
+        <TouchableOpacity style={styles.botaoSair} onPress={handleSair}>
           <Text style={styles.botaoSairTexto}>Sair</Text>
         </TouchableOpacity>
       </View>

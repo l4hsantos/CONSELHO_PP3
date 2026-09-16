@@ -1,20 +1,9 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import {View,Text,TextInput,TouchableOpacity,StyleSheet,KeyboardAvoidingView,Platform,ScrollView,Alert,ActivityIndicator,} from 'react-native';
 import { colors, spacing, typography } from '../theme/colors';
 import { API_URL } from '../config/api';
+import { useAuth } from '../context/AuthContext';
 
-// Perfis disponíveis para login
 const PERFIS = [
   { key: 'aluno', label: 'Aluno' },
   { key: 'professor', label: 'Professor' },
@@ -22,6 +11,7 @@ const PERFIS = [
 ];
 
 export default function LoginScreen({ navigation }) {
+  const { entrar } = useAuth();
   const [perfil, setPerfil] = useState('aluno');
   const [matricula, setMatricula] = useState('');
   const [email, setEmail] = useState('');
@@ -79,11 +69,21 @@ export default function LoginScreen({ navigation }) {
         return;
       }
 
-      navigation.replace('Home', {
-        perfil: dados.perfil,
+      const dadosAuth = {
         token: dados.token,
+        perfil: dados.perfil,
         usuario: dados.usuario,
-      });
+      };
+      entrar(dadosAuth);
+
+      if (dados.perfil === 'coordenador') {
+        navigation.replace('CoordenadorTabs');
+      } else {
+        navigation.replace('Home', {
+          perfil: dados.perfil,
+          usuario: dados.usuario,
+        });
+      }
     } catch (erro) {
       Alert.alert(
         'Erro de conexão',
@@ -108,7 +108,6 @@ export default function LoginScreen({ navigation }) {
           <Text style={typography.subtitle}>Entre com sua conta para continuar</Text>
         </View>
 
-        {/* Seletor de perfil */}
         <View style={styles.perfilRow}>
           {PERFIS.map((p) => {
             const ativo = perfil === p.key;

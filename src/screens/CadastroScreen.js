@@ -1,16 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import {View,Text,TextInput,TouchableOpacity,StyleSheet,KeyboardAvoidingView,Platform,ScrollView,Alert,ActivityIndicator,} from 'react-native';
 import { colors, spacing, typography } from '../theme/colors';
 import { API_URL } from '../config/api';
 
@@ -44,16 +33,16 @@ export default function CadastroScreen({ navigation }) {
   const [perfil, setPerfil] = useState('aluno');
   const [carregando, setCarregando] = useState(false);
 
-  // Campos - Aluno (ativação de cadastro já feito pelo coordenador)
+  // Campos - Aluno
   const [matricula, setMatricula] = useState('');
   const [dataNascimentoAluno, setDataNascimentoAluno] = useState('');
 
-  // Campos - Professor / Coordenador
+  //Professor / Coordenador
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [email, setEmail] = useState('');
   const [chaveAcesso, setChaveAcesso] = useState('');
 
-  // Campos comuns de senha
+  //senha
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
 
