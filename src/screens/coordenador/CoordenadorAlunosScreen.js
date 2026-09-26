@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import {View,Text,FlatList,TouchableOpacity,StyleSheet,Modal,TextInput,ScrollView,Alert,ActivityIndicator,KeyboardAvoidingView,Platform,} from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography } from '../../theme/colors';
@@ -37,6 +37,7 @@ export default function CoordenadorAlunosScreen() {
   const [carregando, setCarregando] = useState(true);
   const [modalVisivel, setModalVisivel] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [alunoEditando, setAlunoEditando] = useState(null);
 
   // Campos do formulário de novo aluno
   const [nomeCompleto, setNomeCompleto] = useState('');
@@ -89,56 +90,211 @@ export default function CoordenadorAlunosScreen() {
 
   function abrirModal() {
     limparFormulario();
+    setAlunoEditando(null);
+    setModalVisivel(true);
+  }
+  //ediçao de dos dados de aluno
+  function abrirEdicao(aluno) {
+    setAlunoEditando(aluno);
+
+    setNomeCompleto(aluno.nome_completo || '');
+    setMatricula(aluno.matricula || '');
+
+    if (aluno.data_nascimento) {
+  const data = String(aluno.data_nascimento).split('T')[0];
+  const partes = data.split('-');
+
+  if (partes.length === 3) {
+    setDataNascimento(
+      `${partes[2]}/${partes[1]}/${partes[0]}`
+    );
+  } else {
+    setDataNascimento('');
+  }
+} else {
+  setDataNascimento('');
+}
+    setTurmaFormId(aluno.turma_id || null);
+    setTelefone(aluno.telefone || '');
+    setEndereco(aluno.endereco || '');
+    setNomeResponsavel(aluno.nome_responsavel || '');
+
     setModalVisivel(true);
   }
 
   async function handleCadastrarAluno() {
     if (!nomeCompleto.trim()) {
-      Alert.alert('Campo obrigatório', 'Informe o nome completo do aluno.');
+      Alert.alert(
+        'Campo obrigatório',
+        'Informe o nome completo do aluno.'
+      );
       return;
     }
+
     if (!matricula.trim()) {
-      Alert.alert('Campo obrigatório', 'Informe a matrícula.');
+      Alert.alert(
+        'Campo obrigatório',
+        'Informe a matrícula.'
+      );
       return;
     }
+
     if (!dataValida(dataNascimento)) {
-      Alert.alert('Data inválida', 'Informe a data de nascimento no formato DD/MM/AAAA.');
+      Alert.alert(
+        'Data inválida',
+        'Informe a data de nascimento no formato DD/MM/AAAA.'
+      );
       return;
     }
+
     if (!turmaFormId) {
-      Alert.alert('Campo obrigatório', 'Selecione a turma do aluno.');
+      Alert.alert(
+        'Campo obrigatório',
+        'Selecione a turma do aluno.'
+      );
       return;
     }
 
     setSalvando(true);
+
     try {
-      const resposta = await fetch(`${API_URL}/alunos/pre-cadastro`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...cabecalhos },
-        body: JSON.stringify({
-          matricula: matricula.trim(),
-          nomeCompleto: nomeCompleto.trim(),
-          dataNascimento: paraFormatoBanco(dataNascimento),
-          turmaId: turmaFormId,
-          telefone: telefone.trim() || undefined,
-          endereco: endereco.trim() || undefined,
-          nomeResponsavel: nomeResponsavel.trim() || undefined,
-        }),
-      });
+      const resposta = await fetch(
+        `${API_URL}/alunos/pre-cadastro`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...cabecalhos,
+          },
+          body: JSON.stringify({
+            matricula: matricula.trim(),
+            nomeCompleto: nomeCompleto.trim(),
+            dataNascimento: paraFormatoBanco(dataNascimento),
+            turmaId: turmaFormId,
+            telefone: telefone.trim() || undefined,
+            endereco: endereco.trim() || undefined,
+            nomeResponsavel: nomeResponsavel.trim() || undefined,
+          }),
+        }
+      );
 
       const dados = await resposta.json();
 
       if (!resposta.ok) {
-        Alert.alert('Não foi possível cadastrar', dados.erro || 'Tente novamente.');
+        Alert.alert(
+          'Não foi possível cadastrar',
+          dados.erro || 'Tente novamente.'
+        );
         return;
       }
 
       setModalVisivel(false);
+      setAlunoEditando(null);
       limparFormulario();
-      carregarDados();
-      Alert.alert('Sucesso', 'Aluno pré-cadastrado! Ele já pode ativar o acesso dele no app.');
+
+      await carregarDados();
+
+      Alert.alert(
+        'Sucesso',
+        'Aluno cadastrado com sucesso!'
+      );
     } catch (erro) {
-      Alert.alert('Erro de conexão', 'Não foi possível falar com a API.');
+      console.log('ERRO AO CADASTRAR ALUNO:', erro);
+
+      Alert.alert(
+        'Erro de conexão',
+        'Não foi possível falar com a API.'
+      );
+    } finally {
+      setSalvando(false);
+    }
+  }
+
+  async function handleEditarAluno() {
+    if (!alunoEditando) return;
+
+    if (!nomeCompleto.trim()) {
+      Alert.alert(
+        'Campo obrigatório',
+        'Informe o nome completo do aluno.'
+      );
+      return;
+    }
+
+    if (!matricula.trim()) {
+      Alert.alert(
+        'Campo obrigatório',
+        'Informe a matrícula.'
+      );
+      return;
+    }
+
+    if (!dataValida(dataNascimento)) {
+      Alert.alert(
+        'Data inválida',
+        'Informe a data de nascimento no formato DD/MM/AAAA.'
+      );
+      return;
+    }
+
+    if (!turmaFormId) {
+      Alert.alert(
+        'Campo obrigatório',
+        'Selecione a turma do aluno.'
+      );
+      return;
+    }
+
+    setSalvando(true);
+
+    try {
+      const resposta = await fetch(
+        `${API_URL}/alunos/${alunoEditando.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...cabecalhos,
+          },
+          body: JSON.stringify({
+            matricula: matricula.trim(),
+            nomeCompleto: nomeCompleto.trim(),
+            dataNascimento: paraFormatoBanco(dataNascimento),
+            turmaId: turmaFormId,
+            telefone: telefone.trim() || null,
+            endereco: endereco.trim() || null,
+            nomeResponsavel: nomeResponsavel.trim() || null,
+          }),
+        }
+      );
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        Alert.alert(
+          'Não foi possível editar',
+          dados.erro || 'Tente novamente.'
+        );
+        return;
+      }
+
+      setModalVisivel(false);
+      setAlunoEditando(null);
+      limparFormulario();
+
+      await carregarDados();
+
+      Alert.alert(
+        'Sucesso',
+        'Dados do aluno atualizados com sucesso!'
+      );
+    } catch (erro) {
+      console.log('ERRO AO EDITAR ALUNO:', erro);
+
+      Alert.alert(
+        'Erro de conexão',
+        'Não foi possível falar com a API.'
+      );
     } finally {
       setSalvando(false);
     }
@@ -185,9 +341,29 @@ export default function CoordenadorAlunosScreen() {
             <Text style={styles.badgeTexto}>{item.ativado ? 'Ativo' : 'Pendente ativação'}</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={() => confirmarExclusao(item)} style={styles.botaoExcluir}>
-          <Ionicons name="trash-outline" size={20} color={colors.danger} />
-        </TouchableOpacity>
+        <View style={styles.acoesAluno}>
+          <TouchableOpacity
+            onPress={() => abrirEdicao(item)}
+            style={styles.botaoEditar}
+          >
+            <Ionicons
+              name="create-outline"
+              size={20}
+              color={colors.primary}
+            />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => confirmarExclusao(item)}
+            style={styles.botaoExcluir}
+          >
+            <Ionicons
+              name="trash-outline"
+              size={20}
+              color={colors.danger}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -235,10 +411,17 @@ export default function CoordenadorAlunosScreen() {
         />
       )}
 
-      <Modal visible={modalVisivel} animationType="slide" onRequestClose={() => setModalVisivel(false)}>
+      <Modal
+        visible={modalVisivel}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setModalVisivel(false)}
+      >
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.modalConteudo}>
-            <Text style={typography.title}>Novo aluno</Text>
+            <Text style={typography.title}>
+              {alunoEditando ? 'Editar aluno' : 'Novo aluno'}
+            </Text>
 
             <View style={styles.campo}>
               <Text style={typography.label}>Nome completo</Text>
@@ -331,13 +514,15 @@ export default function CoordenadorAlunosScreen() {
 
             <TouchableOpacity
               style={styles.botaoPrimario}
-              onPress={handleCadastrarAluno}
+              onPress={alunoEditando ? handleEditarAluno : handleCadastrarAluno}
               disabled={salvando}
             >
               {salvando ? (
                 <ActivityIndicator color={colors.surface} />
               ) : (
-                <Text style={styles.botaoPrimarioTexto}>Cadastrar aluno</Text>
+                <Text style={styles.botaoPrimarioTexto}>
+                  {alunoEditando ? 'Salvar alterações' : 'Cadastrar aluno'}
+                </Text>
               )}
             </TouchableOpacity>
 
@@ -439,6 +624,15 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.text,
   },
+  acoesAluno: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  botaoEditar: {
+    padding: spacing.sm,
+  },
+
   botaoExcluir: {
     padding: spacing.sm,
   },
@@ -448,10 +642,14 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
   },
   modalConteudo: {
+    flexGrow: 1,
     padding: spacing.lg,
+    paddingTop: 40,
+    paddingBottom: 40,
+    backgroundColor: colors.background,
   },
   campo: {
-    marginTop: spacing.md,
+    marginTop: spacing.md
   },
   input: {
     borderWidth: 1,
