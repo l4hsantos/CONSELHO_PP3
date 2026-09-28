@@ -1,23 +1,14 @@
 import React, { useState } from 'react';
 
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, } from 'react-native';
 
 import { colors, spacing, typography } from '../theme/colors';
 
 import { API_URL } from '../config/api';
 
 import { useAuth } from '../context/AuthContext';
+
+import { Ionicons } from '@expo/vector-icons';
 
 const PERFIS = [
   { key: 'aluno', label: 'Aluno' },
@@ -32,7 +23,10 @@ export default function LoginScreen({ navigation }) {
   const [matricula, setMatricula] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erroLogin, setErroLogin] = useState('');
   const [carregando, setCarregando] = useState(false);
+
 
   const usaMatricula = perfil === 'aluno';
 
@@ -89,46 +83,25 @@ export default function LoginScreen({ navigation }) {
   }
 
   async function handleLogin() {
-    if (!validar()) {
-      return;
-    }
+    setErroLogin('');
+    if (!validar()) return;
 
     setCarregando(true);
-
     try {
-      const resposta = await fetch(
-        `${API_URL}/auth/login`,
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type': 'application/json',
-          },
-
-          body: JSON.stringify({
-            perfil,
-            identificador: usaMatricula
-              ? matricula.trim()
-              : email.trim(),
-            senha,
-          }),
-        }
-      );
+      const resposta = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          perfil,
+          identificador: usaMatricula ? matricula.trim() : email.trim(),
+          senha,
+        }),
+      });
 
       const dados = await resposta.json();
 
-      console.log(
-        'LOGIN:',
-        resposta.status,
-        dados
-      );
-
       if (!resposta.ok) {
-        Alert.alert(
-          'Não foi possível entrar',
-          dados.erro || 'Tente novamente.'
-        );
-
+        setErroLogin(dados.erro || 'Não foi possível entrar. Tente novamente.');
         return;
       }
 
@@ -143,25 +116,16 @@ export default function LoginScreen({ navigation }) {
        * que o usuário está autenticado e vai
        * mostrar automaticamente a tela correta.
        */
+
       entrar(dadosAuth);
 
-      console.log(
-        'PERFIL RECEBIDO:',
-        dados.perfil
-      );
-
     } catch (erro) {
-      console.error(erro);
-
-      Alert.alert(
-        'Erro de conexão',
-        'Não foi possível falar com a API. Confira se ela está rodando e se o celular está na mesma rede Wi-Fi.'
-      );
+      setErroLogin('Não foi possível falar com a API. Confira sua conexão.');
     } finally {
       setCarregando(false);
     }
   }
-
+  
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -195,7 +159,7 @@ export default function LoginScreen({ navigation }) {
                 style={[
                   styles.perfilChip,
                   ativo &&
-                    styles.perfilChipAtivo,
+                  styles.perfilChipAtivo,
                 ]}
                 onPress={() =>
                   setPerfil(p.key)
@@ -205,7 +169,7 @@ export default function LoginScreen({ navigation }) {
                   style={[
                     styles.perfilChipTexto,
                     ativo &&
-                      styles.perfilChipTextoAtivo,
+                    styles.perfilChipTextoAtivo,
                   ]}
                 >
                   {p.label}
@@ -259,21 +223,33 @@ export default function LoginScreen({ navigation }) {
           )}
 
           <View style={styles.campo}>
-            <Text style={typography.label}>
-              Senha
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Digite sua senha"
-              placeholderTextColor={
-                colors.placeholder
-              }
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-            />
+            <Text style={typography.label}>Senha</Text>
+            <View style={styles.inputSenhaContainer}>
+              <TextInput
+                style={styles.inputSenha}
+                placeholder="Digite sua senha"
+                placeholderTextColor={colors.placeholder}
+                value={senha}
+                onChangeText={setSenha}
+                secureTextEntry={!mostrarSenha}
+              />
+              <TouchableOpacity
+                onPress={() => setMostrarSenha(!mostrarSenha)}
+                style={styles.botaoOlho}
+              >
+                <Ionicons
+                  name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+          {erroLogin ? (
+            <View style={styles.avisoErro}>
+              <Text style={styles.avisoErroTexto}>{erroLogin}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={styles.botaoPrimario}
@@ -390,6 +366,35 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
   },
+  inputSenhaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  inputSenha: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+  },
+  botaoOlho: {
+    padding: 4,
+  },
+  avisoErro: {
+  backgroundColor: '#FDEDED',
+  borderRadius: 10,
+  padding: spacing.sm,
+  marginBottom: spacing.sm,
+},
+avisoErroTexto: {
+  color: colors.danger,
+  fontSize: 13,
+  textAlign: 'center',
+},
 
   botaoPrimario: {
     backgroundColor: colors.primary,

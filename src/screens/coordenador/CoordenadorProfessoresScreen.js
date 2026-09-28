@@ -1,18 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Modal, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography } from '../../theme/colors';
@@ -35,6 +23,18 @@ export default function CoordenadorProfessoresScreen() {
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
   const [modalVisivel, setModalVisivel] = useState(false);
+
+  const [modalNovoProfessorVisivel, setModalNovoProfessorVisivel] = useState(false);
+  const [novoNomeCompleto, setNovoNomeCompleto] = useState('');
+  const [novoEmail, setNovoEmail] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [salvandoProfessor, setSalvandoProfessor] = useState(false);
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState('');
+  const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
+  const [mostrarConfirmarNovaSenha, setMostrarConfirmarNovaSenha] = useState(false);
+  const [erroNovoProfessor, setErroNovoProfessor] = useState('');
+  const [hoverNovo, setHoverNovo] = useState(false);
+  const [hoverVinculo, setHoverVinculo] = useState(false);
 
   const [professorId, setProfessorId] = useState(null);
   const [disciplinaId, setDisciplinaId] = useState(null);
@@ -257,6 +257,111 @@ export default function CoordenadorProfessoresScreen() {
       );
     }
   }
+  function confirmarExclusaoProfessor(professor) {
+    Alert.alert(
+      'Excluir professor',
+      `Deseja excluir definitivamente o cadastro de ${professor.nome_completo}? Os vínculos de disciplinas e turmas também serão removidos.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: () => excluirProfessor(professor.id),
+        },
+      ]
+    );
+  }
+
+  async function excluirProfessor(id) {
+    try {
+      const resposta = await fetch(`${API_URL}/professores/${id}`, {
+        method: 'DELETE',
+        headers: cabecalhos,
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        Alert.alert(
+          'Não foi possível excluir',
+          dados.erro || 'Tente novamente.'
+        );
+        return;
+      }
+
+      await carregarDados();
+      Alert.alert('Sucesso', 'Cadastro do professor excluído.');
+    } catch (erro) {
+      console.error(erro);
+      Alert.alert('Erro de conexão', 'Não foi possível falar com a API.');
+    }
+  }
+  function limparFormularioProfessor() {
+    setNovoNomeCompleto('');
+    setNovoEmail('');
+    setNovaSenha('');
+    setConfirmarNovaSenha('');
+    setMostrarNovaSenha(false);
+    setMostrarConfirmarNovaSenha(false);
+    setErroNovoProfessor('');
+  }
+
+  function fecharModalNovoProfessor() {
+    if (salvandoProfessor) return;
+    setModalNovoProfessorVisivel(false);
+    limparFormularioProfessor();
+  }
+
+  async function handleCadastrarProfessor() {
+    setErroNovoProfessor('');
+
+    if (!novoNomeCompleto.trim() || !novoEmail.trim() || !novaSenha || !confirmarNovaSenha) {
+      setErroNovoProfessor('Preencha nome, email, senha e confirmação da senha.');
+      return;
+    }
+
+    if (novaSenha.length < 6) {
+      setErroNovoProfessor('A senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    if (novaSenha !== confirmarNovaSenha) {
+      setErroNovoProfessor('A senha e a confirmação precisam ser iguais.');
+      return;
+    }
+
+    setSalvandoProfessor(true);
+    try {
+      const resposta = await fetch(`${API_URL}/professores`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...cabecalhos },
+        body: JSON.stringify({
+          nomeCompleto: novoNomeCompleto.trim(),
+          email: novoEmail.trim(),
+          senha: novaSenha,
+        }),
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        setErroNovoProfessor(dados.erro || 'Não foi possível cadastrar. Tente novamente.');
+        return;
+      }
+
+      setModalNovoProfessorVisivel(false);
+      limparFormularioProfessor();
+      await carregarDados();
+      Alert.alert('Sucesso', 'Professor cadastrado com sucesso!');
+    } catch (erro) {
+      setErroNovoProfessor('Não foi possível falar com a API. Confira sua conexão.');
+    } finally {
+      setSalvandoProfessor(false);
+    }
+  }
 
   function renderProfessor({ item }) {
     return (
@@ -279,6 +384,17 @@ export default function CoordenadorProfessoresScreen() {
               {item.email}
             </Text>
           </View>
+          <TouchableOpacity
+            style={styles.botaoRemover}
+            onPress={() => confirmarExclusaoProfessor(item)}
+            accessibilityLabel={`Excluir cadastro de ${item.nome_completo}`}
+          >
+            <Ionicons
+              name="person-remove-outline"
+              size={21}
+              color={colors.danger}
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.divisor} />
@@ -348,17 +464,25 @@ export default function CoordenadorProfessoresScreen() {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.botaoAdicionar}
-          onPress={abrirModal}
-          accessibilityLabel="Vincular professor"
-        >
-          <Ionicons
-            name="add"
-            size={25}
-            color={colors.surface}
-          />
-        </TouchableOpacity>
+        <View style={styles.botoesHeader}>
+          <TouchableOpacity
+            style={styles.botaoAdicionar}
+            onPress={() => setModalNovoProfessorVisivel(true)}
+            accessibilityLabel="Novo professor"
+            title="Cadastrar novo professor"
+          >
+            <Ionicons name="person-add-outline" size={22} color={colors.surface} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.botaoAdicionar}
+            onPress={abrirModal}
+            accessibilityLabel="Vincular professor"
+            title="Vincular professor a disciplina e turma"
+          >
+            <Ionicons name="add" size={25} color={colors.surface} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {carregando ? (
@@ -608,6 +732,111 @@ export default function CoordenadorProfessoresScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      <Modal
+        visible={modalNovoProfessorVisivel}
+        animationType="slide"
+        onRequestClose={() => setModalNovoProfessorVisivel(false)}
+      >
+        <KeyboardAvoidingView style={styles.modalContainer} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.modalConteudo}>
+            <Text style={typography.title}>Novo professor</Text>
+
+            <View style={styles.campo}>
+              <Text style={typography.label}>Nome completo</Text>
+              <TextInput
+                style={styles.input}
+                value={novoNomeCompleto}
+                onChangeText={setNovoNomeCompleto}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.campo}>
+              <Text style={typography.label}>Email institucional</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="nome@docente.com"
+                value={novoEmail}
+                onChangeText={setNovoEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+
+            <View style={styles.campo}>
+              <Text style={typography.label}>Senha provisória</Text>
+              <View style={styles.inputSenhaContainer}>
+                <TextInput
+                  style={styles.inputSenha}
+                  value={novaSenha}
+                  onChangeText={(t) => { setNovaSenha(t); setErroNovoProfessor(''); }}
+                  secureTextEntry={!mostrarNovaSenha}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity onPress={() => setMostrarNovaSenha(!mostrarNovaSenha)} style={styles.botaoOlho}>
+                  <Ionicons
+                    name={mostrarNovaSenha ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.campo}>
+              <Text style={typography.label}>Confirmar senha</Text>
+              <View style={styles.inputSenhaContainer}>
+                <TextInput
+                  style={styles.inputSenha}
+                  placeholder="Digite a senha novamente"
+                  placeholderTextColor={colors.placeholder}
+                  value={confirmarNovaSenha}
+                  onChangeText={(t) => { setConfirmarNovaSenha(t); setErroNovoProfessor(''); }}
+                  secureTextEntry={!mostrarConfirmarNovaSenha}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  onPress={() => setMostrarConfirmarNovaSenha(!mostrarConfirmarNovaSenha)}
+                  style={styles.botaoOlho}
+                >
+                  <Ionicons
+                    name={mostrarConfirmarNovaSenha ? 'eye-off-outline' : 'eye-outline'}
+                    size={20}
+                    color={colors.textMuted}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {erroNovoProfessor ? (
+              <View style={styles.avisoErro}>
+                <Text style={styles.avisoErroTexto}>{erroNovoProfessor}</Text>
+              </View>
+            ) : null}
+
+            <TouchableOpacity
+              style={styles.botaoPrimario}
+              onPress={handleCadastrarProfessor}
+              disabled={salvandoProfessor}
+            >
+              {salvandoProfessor ? (
+                <ActivityIndicator color={colors.surface} />
+              ) : (
+                <Text style={styles.botaoPrimarioTexto}>Cadastrar</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.botaoCancelar}
+              onPress={() => setModalNovoProfessorVisivel(false)}
+              onRequestClose={fecharModalNovoProfessor}
+            >
+              <Text style={styles.botaoCancelarTexto}>Cancelar</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -749,7 +978,10 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     marginLeft: spacing.xs,
   },
-
+  botoesHeader: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
   vazioContainer: {
     alignItems: 'center',
     padding: spacing.xl,
@@ -879,5 +1111,45 @@ const styles = StyleSheet.create({
   botaoCancelarTexto: {
     color: colors.textMuted,
     fontWeight: '600',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+  },
+  inputSenhaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  inputSenha: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+  },
+  botaoOlho: {
+    padding: 4,
+  },
+  avisoErro: {
+    backgroundColor: '#FDEDED',
+    borderRadius: 10,
+    padding: spacing.sm,
+    marginTop: spacing.md,
+  },
+  avisoErroTexto: {
+    color: colors.danger,
+    fontSize: 13,
+
+    textAlign: 'center',
   },
 });
