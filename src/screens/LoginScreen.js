@@ -202,7 +202,7 @@ export default function LoginScreen({ navigation }) {
             <View style={styles.campo}>
               <Text style={typography.label}>
                 Email
-              </Text>
+              </Text>           
 
               <TextInput
                 style={styles.input}
