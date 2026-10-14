@@ -10,6 +10,7 @@ import LoginScreen from './src/screens/LoginScreen';
 import CadastroScreen from './src/screens/CadastroScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import CoordenadorTabs from './src/navigation/CoordenadorTabs';
+import ProfessorTabs from './src/navigation/ProfessorTabs';
 
 const Stack = createNativeStackNavigator();
 
@@ -40,7 +41,12 @@ function Navegacao() {
             name="CoordenadorTabs"
             component={CoordenadorTabs}
           />
-        ) : (
+        ) : auth.perfil === 'professor' ? (
+          <Stack.Screen
+            name="ProfessorTabs"
+            component={ProfessorTabs}
+          />
+        ): (
           <Stack.Screen
             name="Home"
             component={HomeScreen}
