@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 
 import {
   View,
@@ -11,65 +11,56 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-} from 'react-native';
+} from "react-native";
 
-import { colors, spacing, typography } from '../theme/colors';
+import { colors, spacing, typography } from "../theme/colors";
 
-import { API_URL } from '../config/api';
+import { API_URL } from "../config/api";
 
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from "../context/AuthContext";
+
+import { Ionicons } from "@expo/vector-icons";
 
 const PERFIS = [
-  { key: 'aluno', label: 'Aluno' },
-  { key: 'professor', label: 'Professor' },
-  { key: 'coordenador', label: 'Coordenador' },
+  { key: "aluno", label: "Aluno" },
+  { key: "professor", label: "Professor" },
+  { key: "coordenador", label: "Coordenador" },
 ];
 
 export default function LoginScreen({ navigation }) {
   const { entrar } = useAuth();
 
-  const [perfil, setPerfil] = useState('aluno');
-  const [matricula, setMatricula] = useState('');
-  const [email, setEmail] = useState('');
-  const [senha, setSenha] = useState('');
+  const [perfil, setPerfil] = useState("aluno");
+  const [matricula, setMatricula] = useState("");
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [erroLogin, setErroLogin] = useState("");
   const [carregando, setCarregando] = useState(false);
 
-  const usaMatricula = perfil === 'aluno';
+  const usaMatricula = perfil === "aluno";
 
   function validar() {
     if (usaMatricula) {
       if (!matricula.trim()) {
-        Alert.alert(
-          'Campo obrigatório',
-          'Informe sua matrícula.'
-        );
+        Alert.alert("Campo obrigatório", "Informe sua matrícula.");
 
         return false;
       }
     } else {
       if (!email.trim()) {
-        Alert.alert(
-          'Campo obrigatório',
-          'Informe seu email.'
-        );
+        Alert.alert("Campo obrigatório", "Informe seu email.");
 
         return false;
       }
 
       const dominioEsperado =
-        perfil === 'professor'
-          ? '@docente.com'
-          : '@coordenador.com';
+        perfil === "professor" ? "@docente.com" : "@coordenador.com";
 
-      if (
-        !email
-          .trim()
-          .toLowerCase()
-          .endsWith(dominioEsperado)
-      ) {
+      if (!email.trim().toLowerCase().endsWith(dominioEsperado)) {
         Alert.alert(
-          'Email inválido',
-          `O email de ${perfil} deve terminar com "${dominioEsperado}".`
+          "Email inválido",
+          `O email de ${perfil} deve terminar com "${dominioEsperado}".`,
         );
 
         return false;
@@ -77,10 +68,7 @@ export default function LoginScreen({ navigation }) {
     }
 
     if (!senha) {
-      Alert.alert(
-        'Campo obrigatório',
-        'Informe sua senha.'
-      );
+      Alert.alert("Campo obrigatório", "Informe sua senha.");
 
       return false;
     }
@@ -89,46 +77,25 @@ export default function LoginScreen({ navigation }) {
   }
 
   async function handleLogin() {
-    if (!validar()) {
-      return;
-    }
+    setErroLogin("");
+    if (!validar()) return;
 
     setCarregando(true);
-
     try {
-      const resposta = await fetch(
-        `${API_URL}/auth/login`,
-        {
-          method: 'POST',
-
-          headers: {
-            'Content-Type': 'application/json',
-          },
-
-          body: JSON.stringify({
-            perfil,
-            identificador: usaMatricula
-              ? matricula.trim()
-              : email.trim(),
-            senha,
-          }),
-        }
-      );
+      const resposta = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          perfil,
+          identificador: usaMatricula ? matricula.trim() : email.trim(),
+          senha,
+        }),
+      });
 
       const dados = await resposta.json();
 
-      console.log(
-        'LOGIN:',
-        resposta.status,
-        dados
-      );
-
       if (!resposta.ok) {
-        Alert.alert(
-          'Não foi possível entrar',
-          dados.erro || 'Tente novamente.'
-        );
-
+        setErroLogin(dados.erro || "Não foi possível entrar. Tente novamente.");
         return;
       }
 
@@ -143,20 +110,10 @@ export default function LoginScreen({ navigation }) {
        * que o usuário está autenticado e vai
        * mostrar automaticamente a tela correta.
        */
+
       entrar(dadosAuth);
-
-      console.log(
-        'PERFIL RECEBIDO:',
-        dados.perfil
-      );
-
     } catch (erro) {
-      console.error(erro);
-
-      Alert.alert(
-        'Erro de conexão',
-        'Não foi possível falar com a API. Confira se ela está rodando e se o celular está na mesma rede Wi-Fi.'
-      );
+      setErroLogin("Não foi possível falar com a API. Confira sua conexão.");
     } finally {
       setCarregando(false);
     }
@@ -165,20 +122,14 @@ export default function LoginScreen({ navigation }) {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
-      behavior={
-        Platform.OS === 'ios'
-          ? 'padding'
-          : undefined
-      }
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView
         contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps='handled'
       >
         <View style={styles.header}>
-          <Text style={styles.brand}>
-            CONSELHO+
-          </Text>
+          <Text style={styles.brand}>CONSELHO+</Text>
 
           <Text style={typography.subtitle}>
             Entre com sua conta para continuar
@@ -192,20 +143,13 @@ export default function LoginScreen({ navigation }) {
             return (
               <TouchableOpacity
                 key={p.key}
-                style={[
-                  styles.perfilChip,
-                  ativo &&
-                    styles.perfilChipAtivo,
-                ]}
-                onPress={() =>
-                  setPerfil(p.key)
-                }
+                style={[styles.perfilChip, ativo && styles.perfilChipAtivo]}
+                onPress={() => setPerfil(p.key)}
               >
                 <Text
                   style={[
                     styles.perfilChipTexto,
-                    ativo &&
-                      styles.perfilChipTextoAtivo,
+                    ativo && styles.perfilChipTextoAtivo,
                   ]}
                 >
                   {p.label}
@@ -218,62 +162,66 @@ export default function LoginScreen({ navigation }) {
         <View style={styles.form}>
           {usaMatricula ? (
             <View style={styles.campo}>
-              <Text style={typography.label}>
-                Matrícula
-              </Text>
+              <Text style={typography.label}>Matrícula</Text>
 
               <TextInput
                 style={styles.input}
-                placeholder="Digite sua matrícula"
-                placeholderTextColor={
-                  colors.placeholder
-                }
+                placeholder='Digite sua matrícula'
+                placeholderTextColor={colors.placeholder}
                 value={matricula}
                 onChangeText={setMatricula}
-                autoCapitalize="none"
-                keyboardType="default"
+                autoCapitalize='none'
+                keyboardType='default'
               />
             </View>
           ) : (
             <View style={styles.campo}>
-              <Text style={typography.label}>
-                Email
-              </Text>
+              <Text style={typography.label}>Email</Text>
 
               <TextInput
                 style={styles.input}
                 placeholder={
-                  perfil === 'professor'
-                    ? 'seunome@docente.com'
-                    : 'seunome@coordenador.com'
+                  perfil === "professor"
+                    ? "seunome@docente.com"
+                    : "seunome@coordenador.com"
                 }
-                placeholderTextColor={
-                  colors.placeholder
-                }
+                placeholderTextColor={colors.placeholder}
                 value={email}
                 onChangeText={setEmail}
-                autoCapitalize="none"
-                keyboardType="email-address"
+                autoCapitalize='none'
+                keyboardType='email-address'
               />
             </View>
           )}
 
           <View style={styles.campo}>
-            <Text style={typography.label}>
-              Senha
-            </Text>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Digite sua senha"
-              placeholderTextColor={
-                colors.placeholder
-              }
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-            />
+            <Text style={typography.label}>Senha</Text>
+            <View style={styles.inputSenhaContainer}>
+              <TextInput
+                style={styles.inputSenha}
+                placeholder='Digite sua senha'
+                placeholderTextColor={colors.placeholder}
+                value={senha}
+                onChangeText={setSenha}
+                secureTextEntry={!mostrarSenha}
+              />
+              <TouchableOpacity
+                onPress={() => setMostrarSenha(!mostrarSenha)}
+                style={styles.botaoOlho}
+              >
+                <Ionicons
+                  name={mostrarSenha ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+          {erroLogin ? (
+            <View style={styles.avisoErro}>
+              <Text style={styles.avisoErroTexto}>{erroLogin}</Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity
             style={styles.botaoPrimario}
@@ -281,35 +229,19 @@ export default function LoginScreen({ navigation }) {
             disabled={carregando}
           >
             {carregando ? (
-              <ActivityIndicator
-                color={colors.surface}
-              />
+              <ActivityIndicator color={colors.surface} />
             ) : (
-              <Text
-                style={styles.botaoPrimarioTexto}
-              >
-                Entrar
-              </Text>
+              <Text style={styles.botaoPrimarioTexto}>Entrar</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.linkCadastro}
-            onPress={() =>
-              navigation.navigate('Cadastro')
-            }
+            onPress={() => navigation.navigate("Cadastro")}
           >
-            <Text
-              style={styles.linkCadastroTexto}
-            >
-              Não tem login?{' '}
-              <Text
-                style={
-                  styles.linkCadastroDestaque
-                }
-              >
-                Cadastre-se
-              </Text>
+            <Text style={styles.linkCadastroTexto}>
+              Não tem login?{" "}
+              <Text style={styles.linkCadastroDestaque}>Cadastre-se</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -323,12 +255,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: colors.background,
     padding: spacing.lg,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
 
   header: {
     marginBottom: spacing.xl,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
 
   brand: {
@@ -338,7 +270,7 @@ const styles = StyleSheet.create({
   },
 
   perfilRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: spacing.lg,
     gap: spacing.sm,
   },
@@ -349,7 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.border,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: colors.surface,
   },
 
@@ -360,7 +292,7 @@ const styles = StyleSheet.create({
 
   perfilChipTexto: {
     color: colors.text,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 13,
   },
 
@@ -390,24 +322,53 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
   },
+  inputSenhaContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  inputSenha: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+  },
+  botaoOlho: {
+    padding: 4,
+  },
+  avisoErro: {
+    backgroundColor: "#FDEDED",
+    borderRadius: 10,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  avisoErroTexto: {
+    color: colors.danger,
+    fontSize: 13,
+    textAlign: "center",
+  },
 
   botaoPrimario: {
     backgroundColor: colors.primary,
     borderRadius: 10,
     paddingVertical: 14,
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: spacing.sm,
   },
 
   botaoPrimarioTexto: {
     color: colors.surface,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 15,
   },
 
   linkCadastro: {
     marginTop: spacing.md,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   linkCadastroTexto: {
@@ -417,6 +378,6 @@ const styles = StyleSheet.create({
 
   linkCadastroDestaque: {
     color: colors.accentStrong,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import {View,Text,TextInput,TouchableOpacity,StyleSheet,KeyboardAvoidingView,Platform,ScrollView,Alert,ActivityIndicator,} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator, } from 'react-native';
 import { colors, spacing, typography } from '../theme/colors';
 import { API_URL } from '../config/api';
+import { Ionicons } from '@expo/vector-icons';
 
 const PERFIS = [
   { key: 'aluno', label: 'Aluno' },
@@ -37,6 +38,7 @@ export default function CadastroScreen({ navigation }) {
   const [matricula, setMatricula] = useState('');
   const [dataNascimentoAluno, setDataNascimentoAluno] = useState('');
 
+
   //Professor / Coordenador
   const [nomeCompleto, setNomeCompleto] = useState('');
   const [email, setEmail] = useState('');
@@ -45,6 +47,7 @@ export default function CadastroScreen({ navigation }) {
   //senha
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   function limparCampos() {
     setMatricula('');
@@ -171,6 +174,12 @@ export default function CadastroScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.botaoVoltar}
+          >
+            <Ionicons name="arrow-back" size={24} color={colors.primary} />
+          </TouchableOpacity>
           <Text style={styles.brand}>Criar conta</Text>
           <Text style={typography.subtitle}>Selecione seu perfil para continuar</Text>
         </View>
@@ -273,14 +282,25 @@ export default function CadastroScreen({ navigation }) {
 
           <View style={styles.campo}>
             <Text style={typography.label}>Senha</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Crie uma senha (mín. 6 caracteres)"
-              placeholderTextColor={colors.placeholder}
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-            />
+            <View style={styles.inputSenhaContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Crie uma senha (mín. 6 caracteres)"
+                placeholderTextColor={colors.placeholder}
+                value={senha}
+                onChangeText={setSenha}
+                secureTextEntry={!mostrarSenha}
+              />    <TouchableOpacity
+                onPress={() => setMostrarSenha(!mostrarSenha)}
+                style={styles.botaoOlho}
+              >
+                <Ionicons
+                  name={mostrarSenha ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color={colors.textMuted}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.campo}>
@@ -317,7 +337,7 @@ export default function CadastroScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAvoidingView >
   );
 }
 
@@ -391,6 +411,24 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.text,
   },
+  inputSenhaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+  },
+  inputSenha: {
+    flex: 1,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: colors.text,
+  },
+  botaoOlho: {
+    padding: 4,
+  },
   botaoPrimario: {
     backgroundColor: colors.primary,
     borderRadius: 10,
@@ -403,6 +441,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 15,
   },
+  botaoVoltar: {
+  marginBottom: spacing.sm,
+  alignSelf: 'flex-start',
+},
   linkLogin: {
     marginTop: spacing.md,
     alignItems: 'center',
