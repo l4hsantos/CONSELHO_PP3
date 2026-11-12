@@ -2,6 +2,10 @@
   "expo": {
     "name": "CONSELHO",
     "slug": "CONSELHO",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "plugins": [
+      "expo-status-bar",
+      "expo-font"
+    ]
   }
 }
